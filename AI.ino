@@ -8,8 +8,8 @@ sh2_SensorValue_t sensorValue;
 
 const int numSensor = 6;
 const uint16_t sensor_pin[7] = { 0, 1, 2, 3, 4, 5, 6 };
-int ref_W[7] = { 0, 2100, 2200, 1800, 2100, 2500, 2100 };
-int ref_B[7] = { 0, 600, 700, 500, 750, 800, 500 };
+int ref_W[7] = { 0, 2000, 2090, 1870, 2270, 2470, 2090 };
+int ref_B[7] = { 0, 500, 460, 280, 270, 700, 370 };
 int ref[7];
 
 float present_position = 0;
@@ -43,7 +43,7 @@ int position() {
 
   for (uint8_t i = 1; i <= numSensor; i++) {
     int raw = analog(sensor_pin[i]);
-    long value = map(raw, ref_B[i], ref_W[i], 0, 1000);
+    long value = map(raw, ref_W[i], ref_B[i], 0, 1000);
     value = constrain(value, 0, 1000);
 
     if (value > 200) {
@@ -92,7 +92,7 @@ void RunF(float Kp, float Ki, float Kd, int speed_max, unsigned long duration) {
 }
 
 void RunZ(float Kp, float Ki, float Kd, int speed_max) {
-  while (analog(1) < ref[1] || analog(6) < ref[6]) {
+  while (analog(1) > ref[1] || analog(6) > ref[6]) {
     present_position = position();
     errors = present_position - setpoint;
     integral = integral + errors;
@@ -116,7 +116,7 @@ void RunZ(float Kp, float Ki, float Kd, int speed_max) {
   motorStopAll();
 }
 void RunT(float Kp, float Ki, float Kd, int speed_max) {
-  while (analog(1) < ref[1] || analog(6) < ref[6]) {
+  while (analog(1) > ref[1] || analog(6) > ref[6]) {
     present_position = position();
     errors = present_position - setpoint;
     integral = integral + errors;
@@ -139,7 +139,7 @@ void RunT(float Kp, float Ki, float Kd, int speed_max) {
 }
 
 void RunR(float Kp, float Ki, float Kd, int speed_max) {
-  while (analog(4) < ref[4] || analog(6) < ref[6]) {
+  while (analog(4) > ref[4] || analog(6) > ref[6]) {
     present_position = position();
     errors = present_position - setpoint;
     integral = integral + errors;
@@ -162,7 +162,7 @@ void RunR(float Kp, float Ki, float Kd, int speed_max) {
 }
 
 void RunL(float Kp, float Ki, float Kd, int speed_max) {
-  while (analog(3) < ref[3] || analog(1) < ref[1]) {
+  while (analog(3) > ref[3] || analog(1) > ref[1]) {
     present_position = position();
     errors = present_position - setpoint;
     integral = integral + errors;
@@ -187,10 +187,10 @@ void RunL(float Kp, float Ki, float Kd, int speed_max) {
 void L1() {
   setMotors(-40, 40);
   delay(160);
-  while (analog(1) < ref[1]) {
+  while (analog(1) > ref[1]) {
     setMotors(-40, 40);
   }
-  while (analog(2) > ref[2]) {
+  while (analog(2) < ref[2]) {
     setMotors(-30, 30);
   }
   setMotors(0, 0);
@@ -200,10 +200,10 @@ void L1() {
 void R1() {
   setMotors(40, -40);
   delay(160);
-  while (analog(6) < ref[6]) {
+  while (analog(6) > ref[6]) {
     setMotors(40, -40);
   }
-  while (analog(5) > ref[5]) {
+  while (analog(5) < ref[5]) {
     setMotors(30, -30);
   }
   setMotors(0, 0);
@@ -255,6 +255,7 @@ float getAngleError(float target, float current) {
   if (error < -180.0) error += 360.0;
   return error;
 }
+
 void RunF_IMU_Time(int speed_base, unsigned long duration, float Kp = 0.2, float Ki = 0.0, float Kd = 0.008) {
   float targetYaw = getFreshYaw();
   float previous_error = 0;
@@ -399,8 +400,16 @@ void loop() {
   // readSensor();
   waitForStart();
   beep();
+  RunR(0.015, 0.0, 0.15, 60);
+  R1();
+  RunF(0.015, 0.0, 0.17, 60,100);
+  RunL(0.015, 0.0, 0.15, 60);
+  L1();
+  RunF(0.015, 0.0, 0.15, 60,100);
+  RunT(0.015, 0.0, 0.15, 60);
+  RunR(0.015, 0.0, 0.15, 60);
   // F1();
-  CH();
+  // CH();
   //   RunF(0.008, 0.0, 0.15, 60, 400);
   //   RunT(0.008, 0.0, 0.14, 40);
   //   R1();
